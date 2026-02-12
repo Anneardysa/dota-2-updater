@@ -1,6 +1,6 @@
 # Dota 2 Update Monitor
 
-Discord bot that monitors **Dota 2** (AppID 570) for real-time updates via the **Steam PICS protocol** and sends rich embed notifications to a Discord webhook — styled like SteamDB changelist alerts.
+Discord bot that monitors **Dota 2** (AppID 570) for real-time updates via the **Steam PICS protocol** and sends minimalist embed notifications to a Discord webhook.
 
 ## How It Works
 
@@ -8,9 +8,9 @@ Discord bot that monitors **Dota 2** (AppID 570) for real-time updates via the *
 Steam Network (PICS) → SteamMonitor → UpdateProcessor → DiscordNotifier → Discord Channel
 ```
 
-1. **SteamMonitor** connects to Steam anonymously, enables PICS cache, and listens for `appUpdate` / `changelist` events
-2. **UpdateProcessor** filters for Dota 2, extracts changelist number, build ID, depots/branches, and deduplicates by changenumber
-3. **DiscordNotifier** builds a rich embed and sends it to your Discord webhook
+1. **SteamMonitor** connects to Steam, enables PICS cache, and listens for `appUpdate` / `changelist` events
+2. **UpdateProcessor** filters for Dota 2, extracts changelist number and build ID, deduplicates by changenumber
+3. **DiscordNotifier** builds a clean embed with changelist, build ID, and patch notes link, then sends it to your Discord webhook
 4. **State persistence** saves the last changenumber to `state.json` to avoid duplicate notifications on restart
 
 ## Setup
@@ -23,25 +23,28 @@ Steam Network (PICS) → SteamMonitor → UpdateProcessor → DiscordNotifier �
 ### Installation
 
 ```bash
-git clone https://github.com/YourUser/dota-2-updater.git
+git clone https://github.com/Anneardysa/dota-2-updater.git
 cd dota-2-updater
 npm install
-cp .env.example .env
 ```
 
-Edit `.env` and add your Discord webhook URL:
+Create a `.env` file:
 
 ```env
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_ID/YOUR_TOKEN
+
+# Optional — leave blank for anonymous login
+STEAM_USERNAME=
+STEAM_PASSWORD=
 ```
 
 ### Running
 
 ```bash
-# Start monitoring
+# Start monitoring (24/7 mode)
 npm start
 
-# Send a test embed to verify formatting
+# Send a test embed with live Dota 2 data
 npm test
 
 # Development mode (auto-restart on file changes)
@@ -52,21 +55,45 @@ npm run dev
 
 | Variable              | Required | Default       | Description            |
 | --------------------- | -------- | ------------- | ---------------------- |
-| `DISCORD_WEBHOOK_URL` | ✅       | —             | Discord webhook URL    |
-| `STEAM_USERNAME`      | ❌       | _(anonymous)_ | Steam account username |
-| `STEAM_PASSWORD`      | ❌       | _(anonymous)_ | Steam account password |
+| `DISCORD_WEBHOOK_URL` | Yes      | —             | Discord webhook URL    |
+| `STEAM_USERNAME`      | No       | _(anonymous)_ | Steam account username |
+| `STEAM_PASSWORD`      | No       | _(anonymous)_ | Steam account password |
 
-> **Note:** Anonymous login is sufficient for PICS changelist monitoring. Credential-based login provides more detailed depot info.
+> Anonymous login is sufficient for PICS changelist monitoring. Credential-based login provides more detailed data.
 
 ## Embed Preview
 
-The bot sends rich embeds styled like SteamDB app-update notifications:
+The bot sends minimalist embeds with:
 
 - **Author:** SteamDB with icon
 - **Title:** Dota 2 — App Update (links to SteamDB)
-- **Fields:** Changelist number, Build ID, Changed depots, Branches
-- **Thumbnail:** Dota 2 capsule image
-- **Color:** Steam dark blue (#1B2838)
+- **Fields:** Changelist, Build ID, Patch Notes link
+- **Color:** Monochrome white accent
+
+## Deploy to Railway
+
+1. Push to GitHub
+2. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub Repo**
+3. Select the `dota-2-updater` repo
+4. Add environment variables in the **Variables** tab:
+   - `DISCORD_WEBHOOK_URL`
+   - `STEAM_USERNAME` (optional)
+   - `STEAM_PASSWORD` (optional)
+5. Railway runs `npm start` automatically — the bot stays alive 24/7
+
+## Project Structure
+
+```
+├── config.js               # Environment config + validation
+├── railway.json             # Railway deployment config
+├── package.json
+└── src/
+    ├── index.js             # Entry point — wires up the pipeline
+    ├── steam-monitor.js     # Steam PICS connection + event handling
+    ├── update-processor.js  # Data extraction + deduplication + state
+    ├── discord-notifier.js  # Embed builder + webhook delivery
+    └── logger.js            # Console logger with level prefixes
+```
 
 ## License
 
