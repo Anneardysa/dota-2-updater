@@ -1,0 +1,29 @@
+{
+  "name": "dota-2-updater",
+  "version": "1.0.0",
+  "description": "Discord bot that monitors Dota 2 for real-time updates via Steam PICS protocol",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node src/index.js --test"
+  },
+  "keywords": [
+    "dota2",
+    "steam",
+    "discord",
+    "bot",
+    "pics",
+    "update-monitor"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.0",
+    "steam-user": "^5.2.0"
+  }
+}

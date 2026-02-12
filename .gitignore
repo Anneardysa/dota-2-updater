@@ -1,0 +1,15 @@
+node_modules/
+.env
+state.json
+
+# Steam session data
+sentry/
+*.sentry
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
