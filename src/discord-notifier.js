@@ -5,7 +5,7 @@
 
 import { EmbedBuilder, WebhookClient } from 'discord.js';
 import logger from './logger.js';
-import { DISCORD_WEBHOOK_URL, DOTA2_APP_ID } from '../config.js';
+import { DISCORD_WEBHOOK_URLS, DOTA2_APP_ID } from '../config.js';
 
 
 /** Constants */
@@ -17,24 +17,24 @@ const STEAMDB_CHANGELIST_URL = (n) => `https://steamdb.info/changelist/${n}/`;
 const STEAMDB_PATCHNOTES_URL = (buildId) => `https://steamdb.info/patchnotes/${buildId}/`;
 
 export default class DiscordNotifier {
-  /** @type {WebhookClient|null} */
-  #webhook = null;
+  /** @type {WebhookClient[]} */
+  #webhooks = [];
 
   /**
-   * Initialize the webhook client.
-   * Parses the webhook URL to extract id and token.
+   * Initialize the webhook clients.
+   * Parses the webhook URLs to extract id and token.
    */
   constructor() {
-    if (!DISCORD_WEBHOOK_URL) {
-      logger.warn('No Discord webhook URL configured — notifications disabled');
+    if (DISCORD_WEBHOOK_URLS.length === 0) {
+      logger.warn('No Discord webhook URLs configured — notifications disabled');
       return;
     }
 
     try {
-      this.#webhook = new WebhookClient({ url: DISCORD_WEBHOOK_URL });
-      logger.info('Discord webhook client initialized');
+      this.#webhooks = DISCORD_WEBHOOK_URLS.map(url => new WebhookClient({ url }));
+      logger.info(`Discord webhook clients initialized (${this.#webhooks.length} webhooks configured)`);
     } catch (err) {
-      logger.error(`Failed to initialize webhook: ${err.message}`);
+      logger.error(`Failed to initialize webhooks: ${err.message}`);
     }
   }
 
@@ -42,22 +42,29 @@ export default class DiscordNotifier {
    * Send an update notification embed to Discord.
    *
    * @param {object} update - Processed update data from UpdateProcessor
-   * @returns {Promise<boolean>} Whether the send succeeded
+   * @returns {Promise<boolean>} Whether the send succeeded for at least one webhook
    */
   async sendUpdate(update) {
-    if (!this.#webhook) {
-      logger.warn('Webhook not configured — skipping notification');
+    if (this.#webhooks.length === 0) {
+      logger.warn('Webhooks not configured — skipping notification');
       return false;
     }
 
     try {
       const embed = this.#buildEmbed(update);
+      
+      const promises = this.#webhooks.map(webhook =>
+        webhook.send({
+          username: 'AMT Bot',
+          avatarURL: DOTA2_ICON,
+          embeds: [embed],
+        }).catch(err => {
+          logger.error(`Failed to send to a Discord webhook: ${err.message}`);
+          return false;
+        })
+      );
 
-      await this.#webhook.send({
-        username: 'AMT Bot',
-        avatarURL: DOTA2_ICON,
-        embeds: [embed],
-      });
+      await Promise.all(promises);
 
       logger.info(`Discord notification sent for changelist #${update.changenumber}`);
       return true;
@@ -154,13 +161,13 @@ export default class DiscordNotifier {
   }
 
   /**
-   * Destroy the webhook client and clean up.
+   * Destroy the webhook clients and clean up.
    */
   destroy() {
-    if (this.#webhook) {
-      this.#webhook.destroy();
-      this.#webhook = null;
-      logger.info('Discord webhook client destroyed');
+    for (const webhook of this.#webhooks) {
+      webhook.destroy();
     }
+    this.#webhooks = [];
+    logger.info('Discord webhook clients destroyed');
   }
 }

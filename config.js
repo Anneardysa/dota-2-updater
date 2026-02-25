@@ -6,8 +6,11 @@
 /** Dota 2 App ID on Steam */
 export const DOTA2_APP_ID = 570;
 
-/** Discord webhook URL (required) */
-export const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
+/** Discord webhook URLs (comma-separated, at least one required) */
+export const DISCORD_WEBHOOK_URLS = (process.env.DISCORD_WEBHOOK_URLS || process.env.DISCORD_WEBHOOK_URL || "")
+  .split(',')
+  .map(url => url.trim())
+  .filter(Boolean);
 
 /** Steam credentials (optional — blank = anonymous login) */
 export const STEAM_USERNAME = process.env.STEAM_USERNAME || "";
@@ -30,8 +33,8 @@ export const CHANGELIST_UPDATE_INTERVAL = 60_000;
 export function validateConfig({ isTest = false } = {}) {
    const errors = [];
 
-   if (!isTest && !DISCORD_WEBHOOK_URL) {
-      errors.push("DISCORD_WEBHOOK_URL is required. Set it in your .env file.");
+   if (!isTest && DISCORD_WEBHOOK_URLS.length === 0) {
+      errors.push("DISCORD_WEBHOOK_URL (or DISCORD_WEBHOOK_URLS) is required. Set it in your .env file as a comma-separated list of URLs.");
    }
 
    if (errors.length > 0) {
